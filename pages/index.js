@@ -1,5 +1,5 @@
+'use client'
 import Head from 'next/head';
-import styles from '@/styles/Home.module.css';
 import axios from 'axios';
 import { useEffect, useState, useRef } from 'react';
 import * as d3 from 'd3';
@@ -31,7 +31,7 @@ export default function Home() {
   const drawChart = () => {
     const svg = d3.select(svgRef.current);
     const margin = { top: 20, right: 20, bottom: 30, left: 40 };
-    const width = 600 - margin.left - margin.right;
+    const width = window.innerWidth - margin.left - margin.right; // Ancho basado en el ancho de la ventana del navegador
     const height = 400 - margin.top - margin.bottom;
 
     // Obtener el valor máximo de los datos para la escala Y
@@ -84,8 +84,9 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <svg ref={svgRef} width="600" height="400"></svg>
+        <svg ref={svgRef} width={window.innerWidth} height="400"></svg>
       </main>
     </>
   );
 }
+
