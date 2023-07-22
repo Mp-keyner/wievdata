@@ -1,11 +1,80 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from '@/styles/Home.module.css'
-
-const inter = Inter({ subsets: ['latin'] })
+import Head from 'next/head';
+import styles from '@/styles/Home.module.css';
+import axios from 'axios';
+import { useEffect, useState, useRef } from 'react';
+import * as d3 from 'd3';
 
 export default function Home() {
+  const [data, setData] = useState([]);
+
+  const svgRef = useRef();
+
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const res = await axios.get('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json');
+        setData(res.data.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    getData();
+  }, []);
+
+  useEffect(() => {
+    if (data.length > 0) {
+      drawChart();
+    }
+  }, [data]);
+
+  const drawChart = () => {
+    const svg = d3.select(svgRef.current);
+    const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+    const width = 600 - margin.left - margin.right;
+    const height = 400 - margin.top - margin.bottom;
+
+    // Obtener el valor máximo de los datos para la escala Y
+    const maxDataValue = d3.max(data, d => d[1]);
+
+    // Escala X
+    const x = d3
+      .scaleBand()
+      .domain(data.map(d => d[0]))
+      .range([margin.left, width + margin.left])
+      .padding(0.1);
+
+    // Escala Y
+    const y = d3
+      .scaleLinear()
+      .domain([0, maxDataValue])
+      .range([height + margin.top, margin.top]);
+
+    // Eje X
+    svg
+      .append('g')
+      .attr('transform', `translate(0, ${height + margin.top})`)
+      .call(d3.axisBottom(x));
+
+    // Eje Y
+    svg
+      .append('g')
+      .attr('transform', `translate(${margin.left}, 0)`)
+      .call(d3.axisLeft(y));
+
+    // Barras
+    svg
+      .selectAll('rect')
+      .data(data)
+      .enter()
+      .append('rect')
+      .attr('x', d => x(d[0]))
+      .attr('y', d => y(d[1]))
+      .attr('width', x.bandwidth())
+      .attr('height', d => height + margin.top - y(d[1]))
+      .attr('fill', '#3498db');
+  };
+
   return (
     <>
       <Head>
@@ -14,110 +83,9 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.js</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+      <main>
+        <svg ref={svgRef} width="600" height="400"></svg>
       </main>
     </>
-  )
+  );
 }
