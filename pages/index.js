@@ -1,16 +1,18 @@
-'use client'
 import Head from 'next/head';
+import styles from '@/styles/Home.module.css';
 import axios from 'axios';
 import { useEffect, useState, useRef } from 'react';
 import * as d3 from 'd3';
 
 export default function Home() {
   const [data, setData] = useState([]);
+  const [width, setWidth] = useState(600); // Establecemos un ancho predeterminado para el gráfico
 
   const svgRef = useRef();
 
   useEffect(() => {
     const getData = async () => {
+      setWidth(window.innerWidth); // Ajustamos el ancho del gráfico al ancho de la ventana
       try {
         const res = await axios.get('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json');
         setData(res.data.data);
@@ -26,13 +28,12 @@ export default function Home() {
     if (data.length > 0) {
       drawChart();
     }
-  }, [data]);
+  }, [data, width]); // Asegúrate de actualizar el gráfico cuando cambie el ancho de la ventana
 
   const drawChart = () => {
     const svg = d3.select(svgRef.current);
-    const margin = { top: 20, right: 20, bottom: 30, left: 40 };
-    const width = window.innerWidth - margin.left - margin.right; // Ancho basado en el ancho de la ventana del navegador
-    const height = 400 - margin.top - margin.bottom;
+    const height = 400;
+    const padding = 40; // Espacio entre el borde del gráfico y las barras
 
     // Obtener el valor máximo de los datos para la escala Y
     const maxDataValue = d3.max(data, d => d[1]);
@@ -41,25 +42,30 @@ export default function Home() {
     const x = d3
       .scaleBand()
       .domain(data.map(d => d[0]))
-      .range([margin.left, width + margin.left])
-      .padding(0.1);
+      .range([40, 640 - 20]) // Ajustar el rango para que el gráfico ocupe el ancho de la pantalla
+      .padding(0.3); // Ajustar el espacio entre barras aumentando el valor del padding
 
     // Escala Y
     const y = d3
       .scaleLinear()
       .domain([0, maxDataValue])
-      .range([height + margin.top, margin.top]);
+      .range([height - padding, padding]);
 
     // Eje X
     svg
       .append('g')
-      .attr('transform', `translate(0, ${height + margin.top})`)
-      .call(d3.axisBottom(x));
+      .attr('transform', `translate(0, ${height - padding})`)
+      .call(d3.axisBottom(x))
+      .selectAll('text') // Seleccionamos todas las etiquetas de texto del eje X
+      .style('text-anchor', 'end') // Alineamos las etiquetas al final del eje
+      .attr('transform', 'rotate(-45)') // Rotamos las etiquetas en un ángulo de -45 grados
+      .attr('dx', '-0.8em') // Ajustamos la posición horizontal de las etiquetas
+      .attr('dy', '-0.15em'); // Ajustamos la posición vertical de las etiquetas
 
     // Eje Y
     svg
       .append('g')
-      .attr('transform', `translate(${margin.left}, 0)`)
+      .attr('transform', `translate(${padding}, 0)`)
       .call(d3.axisLeft(y));
 
     // Barras
@@ -71,7 +77,7 @@ export default function Home() {
       .attr('x', d => x(d[0]))
       .attr('y', d => y(d[1]))
       .attr('width', x.bandwidth())
-      .attr('height', d => height + margin.top - y(d[1]))
+      .attr('height', d => height - padding - y(d[1])) // Ajustar la altura de las barras
       .attr('fill', '#3498db');
   };
 
@@ -84,9 +90,8 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <svg ref={svgRef} width={window.innerWidth} height="400"></svg>
+        <svg ref={svgRef} className={styles.diagrama} width={width} height={400}></svg>
       </main>
     </>
   );
 }
-
